@@ -3,11 +3,12 @@ package egorm
 import (
 	"fmt"
 
-	_ "github.com/ego-component/egorm/internal/dsn"
-	"github.com/ego-component/egorm/manager"
 	"github.com/gotomicro/ego/core/econf"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/gotomicro/ego/core/emetric"
+
+	_ "github.com/ego-component/egorm/internal/dsn"
+	"github.com/ego-component/egorm/manager"
 )
 
 // Container ...
@@ -90,7 +91,7 @@ func (c *Container) Build(options ...Option) *Component {
 		if c.config.OnFail == "panic" {
 			c.logger.Panic("open db", elog.FieldErrKind("register err"), elog.FieldErr(err), elog.FieldAddr(c.config.dsnCfg.Addr), elog.FieldValueAny(c.config))
 		} else {
-			emetric.ClientHandleCounter.Inc(emetric.TypeGorm, c.name, c.name+".ping", c.config.dsnCfg.Addr, "open err")
+			emetric.ClientHandleCounter.Inc(emetric.TypeGorm, c.name, c.name+".ping", c.config.dsnCfg.Addr, "open err", "")
 			c.logger.Error("open db", elog.FieldErrKind("register err"), elog.FieldErr(err), elog.FieldAddr(c.config.dsnCfg.Addr), elog.FieldValueAny(c.config))
 			return component
 		}

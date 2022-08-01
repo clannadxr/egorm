@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ego-component/egorm/manager"
 	"github.com/gotomicro/ego/core/eapp"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/gotomicro/ego/core/emetric"
@@ -23,6 +22,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
+
+	"github.com/ego-component/egorm/manager"
 )
 
 // Handler ...
@@ -94,7 +95,7 @@ func metricInterceptor(compName string, dsn *manager.DSN, op string, config *con
 			}
 
 			// 记录监控耗时
-			emetric.ClientHandleHistogram.WithLabelValues(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr).Observe(cost.Seconds())
+			emetric.ClientHandleHistogram.WithLabelValues(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, dsn.DBName).Observe(cost.Seconds())
 
 			// 如果有慢日志，就记录
 			if config.SlowLogThreshold > time.Duration(0) && config.SlowLogThreshold < cost {
@@ -106,15 +107,15 @@ func metricInterceptor(compName string, dsn *manager.DSN, op string, config *con
 				fields = append(fields, elog.FieldEvent("error"), elog.FieldErr(db.Error))
 				if errors.Is(db.Error, ErrRecordNotFound) {
 					logger.Warn("access", fields...)
-					emetric.ClientHandleCounter.Inc(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, "Empty")
+					emetric.ClientHandleCounter.Inc(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, "Empty", dsn.DBName)
 					return
 				}
 				logger.Error("access", fields...)
-				emetric.ClientHandleCounter.Inc(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, "Error")
+				emetric.ClientHandleCounter.Inc(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, "Error", dsn.DBName)
 				return
 			}
 
-			emetric.ClientHandleCounter.Inc(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, "OK")
+			emetric.ClientHandleCounter.Inc(emetric.TypeGorm, compName, dsn.DBName+"."+db.Statement.Table, dsn.Addr, "OK", dsn.DBName)
 			// 开启了记录日志信息，那么就记录access
 			// event normal和error，代表全部access的请求数
 			if config.EnableAccessInterceptor {
