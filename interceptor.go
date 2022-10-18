@@ -165,13 +165,17 @@ func traceInterceptor(compName string, dsn *manager.DSN, op string, options *con
 					semconv.NetPeerNameKey.String(dsn.Addr),
 					attribute.Int64("db.rows_affected", db.RowsAffected),
 				)
-				if db.Error != nil {
+				switch db.Error {
+				case nil,
+					gorm.ErrRecordNotFound:
+					// ignore
+					span.SetStatus(codes.Ok, "OK")
+					return
+				default:
 					span.RecordError(db.Error)
 					span.SetStatus(codes.Error, db.Error.Error())
 					return
 				}
-				span.SetStatus(codes.Ok, "OK")
-				return
 			}
 			next(db)
 		}
